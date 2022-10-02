@@ -1,5 +1,6 @@
-package com.example.musically.recyclerview_files;
+package com.example.musically.recyclerview_songs;
 
+import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -11,12 +12,12 @@ import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.musically.R;
-import com.example.musically.Song;
-// todo extract background colors from customMp3Row and mainActivity
+import com.example.musically.classes.Song;
+// todo extract background colors from customSongRow and mainActivity
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 
-public class SongsRecyclerViewAdapter extends RecyclerView.Adapter<SongsRecyclerViewAdapter.Mp3FilesViewHolder>{
+public class SongsRecyclerViewAdapter extends RecyclerView.Adapter<SongsRecyclerViewAdapter.SongsViewHolder> {
 
     ArrayList<Song> songs;
     RecyclerViewClickListener clickListener;
@@ -28,15 +29,15 @@ public class SongsRecyclerViewAdapter extends RecyclerView.Adapter<SongsRecycler
 
     @NonNull
     @Override
-    public Mp3FilesViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+    public SongsViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.custom_song_recyclerview_row, parent, false);
-        return new Mp3FilesViewHolder(view, clickListener);
+        return new SongsViewHolder(view, clickListener);
     }
 
     @Override
-    public void onBindViewHolder(@NonNull Mp3FilesViewHolder holder, int position) {
-        holder.tvMp3Filename.setText(songs.get(position).getName());
+    public void onBindViewHolder(@NonNull SongsViewHolder holder, int position) {
+        holder.tvSongName.setText(songs.get(position).getName());
     }
 
     @Override
@@ -52,17 +53,17 @@ public class SongsRecyclerViewAdapter extends RecyclerView.Adapter<SongsRecycler
         this.songs = songs;
     }
 
-    public static class Mp3FilesViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener, View.OnLongClickListener {
+    public static class SongsViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener, View.OnLongClickListener {
         private WeakReference<RecyclerViewClickListener> clickListenerWeakReference;
-        private final ConstraintLayout constraintLayoutCustomMp3FileRow;
-        private final TextView tvMp3Filename;
+        private final ConstraintLayout constraintLayoutCustomSongRow;
+        private final TextView tvSongName;
         private final ImageButton buttonAddSongToFavorite;
 
-        public Mp3FilesViewHolder(@NonNull View itemView, RecyclerViewClickListener clickListener) {
+        public SongsViewHolder(@NonNull View itemView, RecyclerViewClickListener clickListener) {
             super(itemView);
             clickListenerWeakReference = new WeakReference<>(clickListener);
-            constraintLayoutCustomMp3FileRow = itemView.findViewById(R.id.constraintLayoutCustomMp3FileRow);
-            tvMp3Filename = itemView.findViewById(R.id.tvSongFilename);
+            constraintLayoutCustomSongRow = itemView.findViewById(R.id.constraintLayoutCustomSongRow);
+            tvSongName = itemView.findViewById(R.id.tvSongFilename);
             buttonAddSongToFavorite = itemView.findViewById(R.id.buttonAddSongToFavorite);
 
             itemView.setOnClickListener(this);

@@ -4,9 +4,8 @@ import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
 import android.provider.MediaStore;
-import android.util.Log;
 
-import com.example.musically.Song;
+import com.example.musically.classes.Song;
 
 import java.util.ArrayList;
 
@@ -43,13 +42,8 @@ public class FilesManager {
                     }
                 }
             }
-
-            // print to see list of mp3 files
-            for (Song song : songs) {
-                Log.e("TAG2022", song.toString());
-            }
         } catch (Exception e) {
-            Log.e("TAG", e.toString());
+            e.printStackTrace();
         } finally {
             if (cursor != null) {
                 cursor.close();

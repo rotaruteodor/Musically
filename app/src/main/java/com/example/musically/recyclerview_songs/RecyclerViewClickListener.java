@@ -1,4 +1,4 @@
-package com.example.musically.recyclerview_files;
+package com.example.musically.recyclerview_songs;
 
 import android.view.View;
 

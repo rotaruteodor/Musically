@@ -1,4 +1,4 @@
-package com.example.musically;
+package com.example.musically.classes;
 
 public class Song {
     private String name;

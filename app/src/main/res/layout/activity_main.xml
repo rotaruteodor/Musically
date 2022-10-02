@@ -5,8 +5,8 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#527E3B"
-    tools:context=".activities.MainActivity"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    tools:context=".activities.MainActivity">
 
     <androidx.constraintlayout.widget.Guideline
         android:id="@+id/GlMainHor85"
@@ -35,7 +35,7 @@
         android:paddingBottom="16dp"
         android:text="@string/favorites_tag"
         android:textColor="@color/white"
-        app:layout_constraintBottom_toTopOf="@id/GlMainHor15"
+        app:layout_constraintBottom_toTopOf="@id/tvSongsVisibleTag"
         app:layout_constraintEnd_toStartOf="@id/buttonPlaylists"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
@@ -48,15 +48,45 @@
         android:layout_marginBottom="8dp"
         android:backgroundTint="@color/transparent"
         android:drawableBottom="@drawable/playlist_icon"
-        android:drawablePadding="15dp"
+        android:drawablePadding="4dp"
         android:fontFamily="@font/russo_one"
         android:paddingBottom="16dp"
         android:text="@string/playlists_tag"
         android:textColor="@color/white"
-        app:layout_constraintBottom_toTopOf="@id/GlMainHor15"
+        app:layout_constraintBottom_toTopOf="@id/tvSongsVisibleTag"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@id/buttonFavorites"
         app:layout_constraintTop_toTopOf="parent" />
+
+
+    <TextView
+        android:id="@+id/tvSongsVisibleTag"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:fontFamily="@font/russo_one"
+        android:text="Viewing: All"
+        android:textColor="@color/white"
+        app:layout_constraintBottom_toBottomOf="@id/GlMainHor15"
+        app:layout_constraintEnd_toStartOf="@id/tvLoopType"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/buttonFavorites" />
+
+    <TextView
+        android:id="@+id/tvLoopType"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="8dp"
+        android:drawableEnd="@drawable/repeat_icon"
+        android:drawablePadding="4dp"
+        android:fontFamily="@font/russo_one"
+        android:gravity="center"
+        android:text="Loop:"
+        android:textColor="@color/white"
+        app:layout_constraintBottom_toBottomOf="@id/tvSongsVisibleTag"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@id/tvSongsVisibleTag"
+        app:layout_constraintTop_toTopOf="@id/tvSongsVisibleTag" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerViewSongs"
@@ -76,7 +106,7 @@
         android:layout_marginBottom="8dp"
         android:backgroundTint="@color/transparent"
         android:src="@drawable/play_icon"
-        app:layout_constraintBottom_toTopOf="@id/tvCurrentSongPlaying"
+        app:layout_constraintBottom_toTopOf="@id/seekBarSongDuration"
         app:layout_constraintEnd_toStartOf="@id/buttonNextSong"
         app:layout_constraintStart_toEndOf="@id/buttonPreviousSong"
         app:layout_constraintTop_toBottomOf="@id/GlMainHor85" />
@@ -89,7 +119,7 @@
         android:backgroundTint="@color/transparent"
         android:rotation="90"
         android:src="@drawable/next_and_prev_icon"
-        app:layout_constraintBottom_toTopOf="@id/tvCurrentSongPlaying"
+        app:layout_constraintBottom_toTopOf="@id/seekBarSongDuration"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@id/buttonPlayPause"
         app:layout_constraintTop_toBottomOf="@id/GlMainHor85" />
@@ -102,10 +132,44 @@
         android:backgroundTint="@color/transparent"
         android:rotation="270"
         android:src="@drawable/next_and_prev_icon"
-        app:layout_constraintBottom_toTopOf="@id/tvCurrentSongPlaying"
+        app:layout_constraintBottom_toTopOf="@id/seekBarSongDuration"
         app:layout_constraintEnd_toStartOf="@id/buttonPlayPause"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/GlMainHor85" />
+
+    <TextView
+        android:id="@+id/tvCurrentSongDuration"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="00:00"
+        android:layout_marginStart="4dp"
+        android:textColor="@color/white"
+        app:layout_constraintBottom_toBottomOf="@id/seekBarSongDuration"
+        app:layout_constraintEnd_toStartOf="@id/seekBarSongDuration"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@id/seekBarSongDuration" />
+
+    <SeekBar
+        android:id="@+id/seekBarSongDuration"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:theme="@style/Theme.Material3.Dark"
+        app:layout_constraintBottom_toTopOf="@id/tvCurrentSongPlaying"
+        app:layout_constraintEnd_toStartOf="@id/tvTotalSongDuration"
+        app:layout_constraintStart_toEndOf="@id/tvCurrentSongDuration"
+        app:layout_constraintTop_toBottomOf="@id/buttonPlayPause" />
+
+    <TextView
+        android:id="@+id/tvTotalSongDuration"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="03:21"
+        android:layout_marginEnd="4dp"
+        android:textColor="@color/white"
+        app:layout_constraintBottom_toBottomOf="@id/seekBarSongDuration"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@id/seekBarSongDuration"
+        app:layout_constraintTop_toTopOf="@id/seekBarSongDuration" />
 
     <TextView
         android:id="@+id/tvCurrentSongPlaying"
@@ -118,7 +182,6 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/buttonPlayPause"
-        />
+        app:layout_constraintTop_toBottomOf="@id/seekBarSongDuration" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
