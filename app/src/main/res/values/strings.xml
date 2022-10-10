@@ -2,4 +2,7 @@
     <string name="app_name">Musically</string>
     <string name="playlists_tag">Playlists</string>
     <string name="favorites_tag">Favorites</string>
+    <string name="search_tag">Search</string>
+    <string name="all_songs_tag">All Songs</string>
+    <string name="loop_tag">Loop:</string>
 </resources>

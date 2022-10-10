@@ -22,9 +22,9 @@ public class PermissionsChecker {
                     showDialog("External storage", context, Manifest.permission.READ_EXTERNAL_STORAGE);
                 } else {
                     ActivityCompat.requestPermissions(
-                                    (Activity) context,
-                                    new String[] { Manifest.permission.READ_EXTERNAL_STORAGE },
-                                    MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE);
+                            (Activity) context,
+                            new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
+                            MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE);
                 }
                 return false;
             } else {
@@ -41,8 +41,8 @@ public class PermissionsChecker {
         alertBuilder.setTitle("PERMISSION REQUEST");
         alertBuilder.setMessage(msg + " permission is necessary");
         alertBuilder.setPositiveButton(android.R.string.yes, (dialog, which) -> ActivityCompat.requestPermissions((Activity) context,
-                        new String[] { permission },
-                        MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE));
+                new String[]{permission},
+                MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE));
         AlertDialog alert = alertBuilder.create();
         alert.show();
     }

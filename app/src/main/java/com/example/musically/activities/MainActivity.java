@@ -1,5 +1,6 @@
 package com.example.musically.activities;
 
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.AppCompatButton;
 import androidx.appcompat.widget.AppCompatImageButton;
@@ -11,24 +12,32 @@ import androidx.recyclerview.widget.RecyclerView;
 import android.content.SharedPreferences;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.text.Editable;
 import android.text.TextUtils;
+import android.text.TextWatcher;
+import android.util.Log;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.musically.R;
-import com.example.musically.classes.RepeatTypes;
-import com.example.musically.classes.Song;
+import com.example.musically.enums.RepeatTypes;
+import com.example.musically.room.song.Song;
+import com.example.musically.room.MusicallyDatabase;
 import com.example.musically.general_utils.FilesManager;
-import com.example.musically.general_utils.PermissionsChecker;
 import com.example.musically.recyclerview_songs.RecyclerViewClickListener;
 import com.example.musically.recyclerview_songs.SongsRecyclerViewAdapter;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Locale;
+import java.util.Random;
+import java.util.stream.Collectors;
 
 public class MainActivity extends AppCompatActivity implements RecyclerViewClickListener {
 
@@ -41,6 +50,7 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewClick
     private DividerItemDecoration dividerItemDecoration;
     private TextView tvCurrentSongPlaying;
 
+    private AppCompatButton buttonAllSongs;
     private AppCompatButton buttonFavorites;
     private AppCompatButton buttonPlaylists;
     private TextView tvTotalSongDuration;
@@ -50,17 +60,25 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewClick
     private AppCompatImageButton buttonPreviousSong;
     private TextView tvCurrentSongDuration;
     private SeekBar seekBarSongDuration;
-    private TextView tvSongsVisibleTag;
+
+    private EditText editTextSearchSongs;
+    private AppCompatImageButton buttonSearchSongs;
+    private AppCompatImageButton buttonRefreshSongsList;
     private TextView tvLoopType;
 
     private Handler songDurationHandler;
-    private ArrayList<Song> songs;
+    private ArrayList<Song> playingSongs;
+    private ArrayList<Song> allSongs;
+    private ArrayList<Song> visibleSongs;
+    private ArrayList<Song> searchedSongs;
     private MediaPlayer mediaPlayer;
     private Integer currentSongIndex;
 
     private RepeatTypes loopType;
     private SharedPreferences sharedPreferences;
+    private MusicallyDatabase database;
 
+    @RequiresApi(api = Build.VERSION_CODES.N)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -69,16 +87,29 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewClick
         initializeComponents();
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.N)
     private void initializeComponents() {
+        initializeVariables();
+        findViews();
+        initializeGraphicalComponents();
+        configureComponents();
+    }
+
+    private void initializeVariables() {
+        database = MusicallyDatabase.getInstance(getApplicationContext());
         mediaPlayer = new MediaPlayer();
-        songs = new ArrayList<>();
         songDurationHandler = new Handler();
         sharedPreferences = getSharedPreferences(SHARED_PREFERENCES_KEY, MODE_PRIVATE);
         loopType = RepeatTypes.valueOf(sharedPreferences.getString(LOOP_TYPE_KEY, RepeatTypes.REPEAT_ALL.toString()));
-        if (PermissionsChecker.checkPermissionREAD_EXTERNAL_STORAGE(getApplicationContext())) {
-            songs = FilesManager.getSongsFilenames(getApplicationContext());
-        }
+        allSongs = new ArrayList<>(database.songDao().getAll());
+        playingSongs = allSongs;
+        visibleSongs = allSongs;
+        searchedSongs = new ArrayList<>();
+    }
+
+    private void findViews() {
         recyclerViewSongs = findViewById(R.id.recyclerViewSongs);
+        buttonAllSongs = findViewById(R.id.buttonAllSongs);
         buttonFavorites = findViewById(R.id.buttonFavorites);
         buttonPlaylists = findViewById(R.id.buttonPlaylists);
         buttonPlayPause = findViewById(R.id.buttonPlayPause);
@@ -89,32 +120,167 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewClick
         tvCurrentSongDuration = findViewById(R.id.tvCurrentSongDuration);
         seekBarSongDuration = findViewById(R.id.seekBarSongDuration);
         tvTotalSongDuration = findViewById(R.id.tvTotalSongDuration);
-        tvSongsVisibleTag = findViewById(R.id.tvSongsVisibleTag);
+        editTextSearchSongs = findViewById(R.id.editTextSearchSongs);
+        buttonSearchSongs = findViewById(R.id.buttonSearchSongs);
+        buttonRefreshSongsList = findViewById(R.id.buttonRefreshSongsList);
         tvLoopType = findViewById(R.id.tvLoopType);
-        dividerItemDecoration = new DividerItemDecoration(recyclerViewSongs.getContext(), DividerItemDecoration.VERTICAL);
-        configureComponents();
     }
 
-    private void configureComponents() {
-        dividerItemDecoration.setDrawable(ContextCompat.getDrawable(this, R.drawable.recycler_view_divider));
-        recyclerViewSongs.addItemDecoration(dividerItemDecoration);
+    private void initializeGraphicalComponents() {
+        dividerItemDecoration = new DividerItemDecoration(recyclerViewSongs.getContext(), DividerItemDecoration.VERTICAL);
         recyclerViewSongsLayoutManager = new LinearLayoutManager(getApplicationContext());
-        recyclerViewSongsAdapter = new SongsRecyclerViewAdapter(songs, this);
-        recyclerViewSongs.setHasFixedSize(true);
-        recyclerViewSongs.setLayoutManager(recyclerViewSongsLayoutManager);
-        recyclerViewSongs.setAdapter(recyclerViewSongsAdapter);
-        updateSongsRecyclerView();
+        recyclerViewSongsAdapter = new SongsRecyclerViewAdapter(visibleSongs, this);
+    }
 
-        mediaPlayer.setOnPreparedListener(MediaPlayer::start);
-        mediaPlayer.setOnErrorListener((mp, what, extra) -> {
-            Toast.makeText(getApplicationContext(), "Error. Can't play song", Toast.LENGTH_LONG).show();
-            return false;
+    @RequiresApi(api = Build.VERSION_CODES.N)
+    private void configureComponents() {
+        configureSongsRecyclerView();
+        configureMediaPlayer();
+        configureCurrentSongPlayingTextView();
+        configurePlayPauseButton();
+        configureNextSongButton();
+        configurePreviousSongButton();
+        configureSongDurationSeekBar();
+        configureLoopType();
+        configureSeeAllSongsButton();
+        configureSeeFavoriteSongsButton();
+        configureSeePlaylistsButton();
+        configureRefreshSongsListButton();
+        configureSearchSongsEditText();
+    }
+
+    private void configureSearchSongsEditText() {
+        editTextSearchSongs.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+            }
+
+            @RequiresApi(api = Build.VERSION_CODES.N)
+            @Override
+            public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+                if (!TextUtils.isEmpty(charSequence)) {
+                    searchedSongs = visibleSongs.stream()
+                            .filter(s -> s.getName().toLowerCase(Locale.ROOT).contains(charSequence.toString().toLowerCase(Locale.ROOT)))
+                            .collect(Collectors.toCollection(ArrayList::new));
+                    updateSongsRecyclerView(searchedSongs);
+                } else {
+                    searchedSongs = new ArrayList<>();
+                    updateSongsRecyclerView(visibleSongs);
+                }
+            }
+
+            @Override
+            public void afterTextChanged(Editable editable) {
+            }
         });
+    }
 
-        tvCurrentSongPlaying.setEllipsize(TextUtils.TruncateAt.MARQUEE);
-        tvCurrentSongPlaying.setSelected(true);
-        tvCurrentSongPlaying.setSingleLine(true);
+    @RequiresApi(api = Build.VERSION_CODES.N)
+    private void configureRefreshSongsListButton() {
+        buttonRefreshSongsList.setOnClickListener(view -> {
+            ArrayList<Song> newSongs = FilesManager.getSongsFromDevice(this, allSongs);
+            allSongs.addAll(newSongs);
+            database.songDao().insertAll(newSongs);
+            updateSongsRecyclerView(visibleSongs);
+            String toastMessage = "Successfully updated songs list!\nNr. of new songs found: "
+                    .concat(String.valueOf(newSongs.size()));
 
+            Toast.makeText(getApplicationContext(), toastMessage, Toast.LENGTH_LONG).show();
+        });
+    }
+
+    private void configureSeePlaylistsButton() {
+        buttonPlaylists.setOnClickListener(view -> {
+            // todo
+        });
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.N)
+    private void configureSeeFavoriteSongsButton() {
+        buttonFavorites.setOnClickListener(view -> {
+            visibleSongs = (ArrayList<Song>) allSongs.stream()
+                    .filter(Song::isFavorite)
+                    .collect(Collectors.toList());
+
+            updateSongsRecyclerView(visibleSongs);
+        });
+    }
+
+    private void configureSeeAllSongsButton() {
+        buttonAllSongs.setOnClickListener(view -> {
+            visibleSongs = allSongs;
+            updateSongsRecyclerView(visibleSongs);
+        });
+    }
+
+    private void configureLoopType() {
+        if (loopType == RepeatTypes.SHUFFLE) {
+            tvLoopType.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.shuffle_icon, 0);
+        } else if (loopType == RepeatTypes.REPEAT_CURRENT) {
+            tvLoopType.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.repeat_one_icon, 0);
+        } else {
+            tvLoopType.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.repeat_icon, 0);
+        }
+
+        // repeat -> repeat current -> shuffle
+        tvLoopType.setOnClickListener(view -> {
+            if (loopType == RepeatTypes.SHUFFLE) {
+                tvLoopType.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.repeat_icon, 0);
+                loopType = RepeatTypes.REPEAT_ALL;
+            } else if (loopType == RepeatTypes.REPEAT_CURRENT) {
+                tvLoopType.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.shuffle_icon, 0);
+                loopType = RepeatTypes.SHUFFLE;
+            } else {
+                tvLoopType.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.repeat_one_icon, 0);
+                loopType = RepeatTypes.REPEAT_CURRENT;
+            }
+        });
+    }
+
+    private void configureSongDurationSeekBar() {
+        seekBarSongDuration.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int currentDuration, boolean changedByUser) {
+                if (changedByUser) {
+                    mediaPlayer.seekTo(currentDuration);
+                }
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+            }
+        });
+    }
+
+    private void configurePreviousSongButton() {
+        buttonPreviousSong.setOnClickListener(view -> {
+            if (currentSongIndex == 0) {
+                currentSongIndex = playingSongs.size() - 1;
+            } else {
+                --currentSongIndex;
+            }
+            prepareSongPlay(currentSongIndex);
+            setSongDuration(currentSongIndex);
+        });
+    }
+
+    private void configureNextSongButton() {
+        buttonNextSong.setOnClickListener(view -> {
+            if (currentSongIndex == playingSongs.size() - 1) {
+                currentSongIndex = 0;
+            } else {
+                ++currentSongIndex;
+            }
+            prepareSongPlay(currentSongIndex);
+            setSongDuration(currentSongIndex);
+        });
+    }
+
+    private void configurePlayPauseButton() {
         buttonPlayPause.setOnClickListener(view -> {
             if (currentSongIndex != null) {
                 if (mediaPlayer.isPlaying()) {
@@ -128,78 +294,64 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewClick
                 Toast.makeText(getApplicationContext(), "No song selected", Toast.LENGTH_SHORT).show();
             }
         });
-
-        buttonNextSong.setOnClickListener(view -> {
-            if (currentSongIndex == songs.size() - 1) {
-                currentSongIndex = 0;
-            } else {
-                ++currentSongIndex;
-            }
-            prepareSongPlay(currentSongIndex);
-            setSongDuration(currentSongIndex);
-        });
-
-        buttonPreviousSong.setOnClickListener(view -> {
-            if (currentSongIndex == 0) {
-                currentSongIndex = songs.size() - 1;
-            } else {
-                --currentSongIndex;
-            }
-            prepareSongPlay(currentSongIndex);
-            setSongDuration(currentSongIndex);
-        });
-
-        seekBarSongDuration.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int currentDuration, boolean changedByUser) {
-                if (changedByUser) {
-                    mediaPlayer.seekTo(currentDuration);
-                }
-            }
-
-            @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {
-
-            }
-
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
-
-            }
-        });
-
-        if(loopType == RepeatTypes.SHUFFLE){
-            tvLoopType.setCompoundDrawablesWithIntrinsicBounds(0,0,R.drawable.shuffle_icon,0);
-        } else if (loopType == RepeatTypes.REPEAT_CURRENT){
-            tvLoopType.setCompoundDrawablesWithIntrinsicBounds(0,0,R.drawable.repeat_one_icon,0);
-        } else {
-            tvLoopType.setCompoundDrawablesWithIntrinsicBounds(0,0,R.drawable.repeat_icon,0);
-        }
-
-        // rep - rep one - shuffle
-        tvLoopType.setOnClickListener(view -> {
-            if(loopType == RepeatTypes.SHUFFLE){
-                tvLoopType.setCompoundDrawablesWithIntrinsicBounds(0,0,R.drawable.repeat_icon,0);
-                loopType = RepeatTypes.REPEAT_ALL;
-            } else if (loopType == RepeatTypes.REPEAT_CURRENT){
-                tvLoopType.setCompoundDrawablesWithIntrinsicBounds(0,0,R.drawable.shuffle_icon,0);
-                loopType = RepeatTypes.SHUFFLE;
-            } else {
-                tvLoopType.setCompoundDrawablesWithIntrinsicBounds(0,0,R.drawable.repeat_one_icon,0);
-                loopType = RepeatTypes.REPEAT_CURRENT;
-            }
-        });
-
     }
 
-    private void updateSongsRecyclerView() {
-        //todo image saying there's no mp3 files on the device
+    private void configureCurrentSongPlayingTextView() {
+        tvCurrentSongPlaying.setEllipsize(TextUtils.TruncateAt.MARQUEE);
+        tvCurrentSongPlaying.setSelected(true);
+        tvCurrentSongPlaying.setSingleLine(true);
+    }
+
+    private void configureMediaPlayer() {
+        mediaPlayer.setOnPreparedListener(MediaPlayer::start);
+        mediaPlayer.setOnErrorListener((mp, what, extra) -> {
+            Toast.makeText(getApplicationContext(), "Error. Can't play song", Toast.LENGTH_LONG).show();
+            return false;
+        });
+
+        mediaPlayer.setOnCompletionListener(mediaPlayer -> {
+            if (loopType == RepeatTypes.SHUFFLE) {
+                Integer songIndex = currentSongIndex;
+                if (playingSongs.size() > 1) {
+                    Random rd = new Random();
+                    songIndex = rd.nextInt(playingSongs.size());
+
+                    while (songIndex.equals(currentSongIndex)) {
+                        songIndex = rd.nextInt(playingSongs.size());
+                        // todo this for nextbutton also?
+                    }
+                }
+                prepareSongPlay(songIndex);
+            } else if (loopType == RepeatTypes.REPEAT_ALL) {
+                if (currentSongIndex == playingSongs.size() - 1) {
+                    currentSongIndex = 0;
+                } else {
+                    ++currentSongIndex;
+                }
+                prepareSongPlay(currentSongIndex);
+            } else {
+                prepareSongPlay(currentSongIndex);
+            }
+        });
+    }
+
+    private void configureSongsRecyclerView() {
+        dividerItemDecoration.setDrawable(ContextCompat.getDrawable(getApplicationContext(), R.drawable.recycler_view_divider));
+        recyclerViewSongs.addItemDecoration(dividerItemDecoration);
+        recyclerViewSongs.setHasFixedSize(true);
+        recyclerViewSongs.setLayoutManager(recyclerViewSongsLayoutManager);
+        recyclerViewSongs.setAdapter(recyclerViewSongsAdapter);
+        updateSongsRecyclerView(visibleSongs);
+    }
+
+    private void updateSongsRecyclerView(ArrayList<Song> songs) {
+        //todo image saying there's no mp3 files on the device?
         ((SongsRecyclerViewAdapter) recyclerViewSongsAdapter).setSongs(songs);
         recyclerViewSongsAdapter.notifyDataSetChanged();
     }
 
     private void setSongDuration(int position) {
-        tvTotalSongDuration.setText(getDurationAsString(songs.get(position).getDurationInMilisec()));
+        tvTotalSongDuration.setText(getDurationAsString(playingSongs.get(position).getDurationInMilisec()));
         seekBarSongDuration.setMax(Math.toIntExact(mediaPlayer.getDuration()));
     }
 
@@ -210,37 +362,61 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewClick
     }
 
     private String getDurationAsString(int position) {
-        long duration = songs.get(position).getDurationInMilisec();
+        long duration = playingSongs.get(position).getDurationInMilisec();
         long minutes = (duration / 60000) % 60000;
         long seconds = duration % 60000 / 1000;
         return String.format("%02d:%02d", minutes, seconds);
     }
 
-    @Override
-    public void onPositionClicked(View clickedView, int clickedRecyclerItemPosition) {
-        if (clickedView.getId() == R.id.buttonAddSongToFavorite) {
-            // todo
-        } else {
-            prepareSongPlay(clickedRecyclerItemPosition);
-        }
-    }
-
-    private void prepareSongPlay(int clickedRecyclerItemPosition) {
+    private void prepareSongPlay(int position) {
         try {
             mediaPlayer.reset();
-            mediaPlayer.setDataSource(songs.get(clickedRecyclerItemPosition).getPath());
+            mediaPlayer.setDataSource(playingSongs.get(position).getPath());
             mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
             mediaPlayer.prepare();
             UpdateSongDurationSeekBar updateSongDurationSeekBar = new UpdateSongDurationSeekBar();
             songDurationHandler.post(updateSongDurationSeekBar);
-            currentSongIndex = clickedRecyclerItemPosition;
+            currentSongIndex = position;
             buttonPlayPause.setImageResource(R.drawable.pause_icon);
-            tvCurrentSongPlaying.setText(songs.get(clickedRecyclerItemPosition).getName());
-            setSongDuration(clickedRecyclerItemPosition);
+            tvCurrentSongPlaying.setText(playingSongs.get(position).getName());
+            setSongDuration(position);
         } catch (IOException e) {
             e.printStackTrace();
             Toast.makeText(getApplicationContext(), "Error. Can't prepare song", Toast.LENGTH_LONG).show();
         }
+    }
+
+    @Override
+    public void onPositionClicked(View clickedView, int position) {
+        if (clickedView.getId() == R.id.buttonAddSongToFavorite) {
+            if (!visibleSongs.get(position).isFavorite()) {
+                makeSongFavorite(clickedView, position);
+            } else {
+                deleteSongFromFavorites(clickedView, position);
+            }
+        } else {
+            if(searchedSongs.size() > 0){
+                playingSongs = searchedSongs;
+            } else {
+                playingSongs = visibleSongs;
+            }
+
+            prepareSongPlay(position);
+        }
+    }
+
+    private void deleteSongFromFavorites(View clickedView, int position) {
+        visibleSongs.get(position).setFavorite(false);
+        database.songDao().update(false, visibleSongs.get(position).getId());
+        ((AppCompatImageButton) clickedView.findViewById(R.id.buttonAddSongToFavorite))
+                .setImageResource(R.drawable.heart_icon_shallow_24);
+    }
+
+    private void makeSongFavorite(View clickedView, int position) {
+        visibleSongs.get(position).setFavorite(true);
+        database.songDao().update(true, visibleSongs.get(position).getId());
+        ((AppCompatImageButton) clickedView.findViewById(R.id.buttonAddSongToFavorite))
+                .setImageResource(R.drawable.heart_icon_filled_24);
     }
 
     @Override
@@ -251,9 +427,9 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewClick
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        SharedPreferences.Editor spEditor = sharedPreferences.edit();
-        spEditor.putString(LOOP_TYPE_KEY, loopType.toString());
-        spEditor.apply();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            Log.e("SONGS:", allSongs.size() + " - " + allSongs);
+        }
     }
 
     public class UpdateSongDurationSeekBar implements Runnable {

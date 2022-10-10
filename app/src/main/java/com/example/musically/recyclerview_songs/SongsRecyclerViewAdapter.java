@@ -1,6 +1,5 @@
 package com.example.musically.recyclerview_songs;
 
-import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -12,7 +11,7 @@ import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.musically.R;
-import com.example.musically.classes.Song;
+import com.example.musically.room.song.Song;
 // todo extract background colors from customSongRow and mainActivity
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
@@ -38,6 +37,12 @@ public class SongsRecyclerViewAdapter extends RecyclerView.Adapter<SongsRecycler
     @Override
     public void onBindViewHolder(@NonNull SongsViewHolder holder, int position) {
         holder.tvSongName.setText(songs.get(position).getName());
+        if (songs.get(position).isFavorite()) {
+            holder.buttonAddSongToFavorite.setImageResource(R.drawable.heart_icon_filled_24);
+        } else {
+            holder.buttonAddSongToFavorite.setImageResource(R.drawable.heart_icon_shallow_24);
+        }
+
     }
 
     @Override
@@ -52,6 +57,7 @@ public class SongsRecyclerViewAdapter extends RecyclerView.Adapter<SongsRecycler
     public void setSongs(ArrayList<Song> songs) {
         this.songs = songs;
     }
+
 
     public static class SongsViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener, View.OnLongClickListener {
         private WeakReference<RecyclerViewClickListener> clickListenerWeakReference;

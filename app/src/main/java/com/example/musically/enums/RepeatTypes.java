@@ -1,4 +1,4 @@
-package com.example.musically.classes;
+package com.example.musically.enums;
 
 public enum RepeatTypes {
     REPEAT_CURRENT,

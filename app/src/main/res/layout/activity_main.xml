@@ -15,12 +15,51 @@
         android:orientation="horizontal"
         app:layout_constraintGuide_percent="0.85" />
 
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/white"
+        app:layout_constraintBottom_toBottomOf="@id/GlMainHor85"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@id/GlMainHor85" />
+
     <androidx.constraintlayout.widget.Guideline
-        android:id="@+id/GlMainHor15"
+        android:id="@+id/GlMainHor17"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="horizontal"
-        app:layout_constraintGuide_percent="0.15" />
+        app:layout_constraintGuide_percent="0.17" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/white"
+        app:layout_constraintBottom_toBottomOf="@id/GlMainHor17"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@id/GlMainHor17" />
+
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/buttonAllSongs"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_margin="8dp"
+        android:layout_marginBottom="8dp"
+        android:backgroundTint="@color/transparent"
+        android:drawableBottom="@drawable/song_icon"
+        android:drawablePadding="8dp"
+        android:fontFamily="@font/russo_one"
+        android:paddingBottom="16dp"
+        android:text="@string/all_songs_tag"
+        android:textColor="@color/white"
+        android:textSize="12sp"
+        app:layout_constraintBottom_toTopOf="@id/editTextSearchSongs"
+        app:layout_constraintEnd_toStartOf="@id/buttonFavorites"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
 
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/buttonFavorites"
@@ -29,15 +68,16 @@
         android:layout_margin="8dp"
         android:layout_marginBottom="8dp"
         android:backgroundTint="@color/transparent"
-        android:drawableBottom="@drawable/heart_icon"
+        android:drawableBottom="@drawable/heart_icon_shallow_24"
         android:drawablePadding="8dp"
         android:fontFamily="@font/russo_one"
         android:paddingBottom="16dp"
         android:text="@string/favorites_tag"
         android:textColor="@color/white"
-        app:layout_constraintBottom_toTopOf="@id/tvSongsVisibleTag"
+        android:textSize="12sp"
+        app:layout_constraintBottom_toTopOf="@id/editTextSearchSongs"
         app:layout_constraintEnd_toStartOf="@id/buttonPlaylists"
-        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintStart_toEndOf="@id/buttonAllSongs"
         app:layout_constraintTop_toTopOf="parent" />
 
     <androidx.appcompat.widget.AppCompatButton
@@ -53,23 +93,59 @@
         android:paddingBottom="16dp"
         android:text="@string/playlists_tag"
         android:textColor="@color/white"
-        app:layout_constraintBottom_toTopOf="@id/tvSongsVisibleTag"
+        android:textSize="12sp"
+        app:layout_constraintBottom_toTopOf="@id/editTextSearchSongs"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@id/buttonFavorites"
         app:layout_constraintTop_toTopOf="parent" />
 
 
-    <TextView
-        android:id="@+id/tvSongsVisibleTag"
+    <EditText
+        android:id="@+id/editTextSearchSongs"
         android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginStart="8dp"
+        android:background="@drawable/edittext_border"
+        android:focusable="false"
+        android:fontFamily="@font/russo_one"
+        android:hint="@string/search_tag"
+        android:inputType="text"
+        android:textAlignment="center"
+        android:textColor="@color/white"
+        android:textColorHint="@color/white"
+        android:textSize="12sp"
+        app:layout_constraintBottom_toBottomOf="@id/buttonRefreshSongsList"
+        app:layout_constraintEnd_toStartOf="@id/buttonSearchSongs"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@id/buttonRefreshSongsList" />
+
+    <androidx.appcompat.widget.AppCompatImageButton
+        android:id="@+id/buttonSearchSongs"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
-        android:fontFamily="@font/russo_one"
-        android:text="Viewing: All"
-        android:textColor="@color/white"
-        app:layout_constraintBottom_toBottomOf="@id/GlMainHor15"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="64dp"
+        android:layout_marginBottom="8dp"
+        android:background="@color/transparent"
+        android:src="@drawable/search_icon"
+        app:layout_constraintBottom_toBottomOf="@id/GlMainHor17"
+        app:layout_constraintEnd_toStartOf="@id/buttonRefreshSongsList"
+        app:layout_constraintStart_toEndOf="@id/editTextSearchSongs"
+        app:layout_constraintTop_toBottomOf="@id/buttonFavorites" />
+
+
+    <androidx.appcompat.widget.AppCompatImageButton
+        android:id="@+id/buttonRefreshSongsList"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="8dp"
+        android:background="@color/transparent"
+        android:src="@drawable/refresh_icon"
+        app:layout_constraintBottom_toBottomOf="@id/GlMainHor17"
         app:layout_constraintEnd_toStartOf="@id/tvLoopType"
-        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/buttonFavorites" />
 
     <TextView
@@ -77,16 +153,16 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginEnd="8dp"
-        android:drawableEnd="@drawable/repeat_icon"
         android:drawablePadding="4dp"
         android:fontFamily="@font/russo_one"
         android:gravity="center"
-        android:text="Loop:"
+        android:text="@string/loop_tag"
         android:textColor="@color/white"
-        app:layout_constraintBottom_toBottomOf="@id/tvSongsVisibleTag"
+        android:textSize="18sp"
+        app:drawableEndCompat="@drawable/repeat_icon"
+        app:layout_constraintBottom_toBottomOf="@id/editTextSearchSongs"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@id/tvSongsVisibleTag"
-        app:layout_constraintTop_toTopOf="@id/tvSongsVisibleTag" />
+        app:layout_constraintTop_toTopOf="@id/editTextSearchSongs" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerViewSongs"
@@ -96,7 +172,7 @@
         app:layout_constraintBottom_toTopOf="@id/GlMainHor85"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/GlMainHor15" />
+        app:layout_constraintTop_toBottomOf="@id/GlMainHor17" />
 
 
     <androidx.appcompat.widget.AppCompatImageButton
@@ -141,7 +217,6 @@
         android:id="@+id/tvCurrentSongDuration"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="00:00"
         android:layout_marginStart="4dp"
         android:textColor="@color/white"
         app:layout_constraintBottom_toBottomOf="@id/seekBarSongDuration"
@@ -163,7 +238,6 @@
         android:id="@+id/tvTotalSongDuration"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="03:21"
         android:layout_marginEnd="4dp"
         android:textColor="@color/white"
         app:layout_constraintBottom_toBottomOf="@id/seekBarSongDuration"
