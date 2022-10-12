@@ -106,7 +106,7 @@
         android:layout_height="0dp"
         android:layout_marginStart="8dp"
         android:background="@drawable/edittext_border"
-        android:focusable="false"
+        android:focusable="true"
         android:fontFamily="@font/russo_one"
         android:hint="@string/search_tag"
         android:inputType="text"
@@ -117,7 +117,8 @@
         app:layout_constraintBottom_toBottomOf="@id/buttonRefreshSongsList"
         app:layout_constraintEnd_toStartOf="@id/buttonSearchSongs"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@id/buttonRefreshSongsList" />
+        app:layout_constraintTop_toTopOf="@id/buttonRefreshSongsList"
+        />
 
     <androidx.appcompat.widget.AppCompatImageButton
         android:id="@+id/buttonSearchSongs"

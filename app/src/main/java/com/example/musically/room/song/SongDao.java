@@ -24,4 +24,6 @@ public interface SongDao {
     @Query("DELETE FROM songs")
     void deleteAll();
 
+    @Query("DELETE FROM songs WHERE id = :id")
+    void deleteSong(long id);
 }

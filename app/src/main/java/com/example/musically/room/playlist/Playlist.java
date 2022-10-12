@@ -2,6 +2,7 @@ package com.example.musically.room.playlist;
 
 import androidx.room.ColumnInfo;
 import androidx.room.Entity;
+import androidx.room.Index;
 import androidx.room.PrimaryKey;
 
 import com.example.musically.room.song.Song;
@@ -22,6 +23,7 @@ public class Playlist {
 
     public Playlist(String name) {
         this.name = name;
+        songs = new ArrayList<>();
     }
 
     public long getId() {
@@ -46,6 +48,14 @@ public class Playlist {
 
     public void setSongs(ArrayList<Song> songs) {
         this.songs = songs;
+    }
+
+    public void addSong(Song song){
+        songs.add(song);
+    }
+
+    public void removeSong(Song song){
+        songs.remove(song);
     }
 
     @Override

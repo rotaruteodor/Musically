@@ -1,6 +1,7 @@
 package com.example.musically.activities;
 
 import androidx.annotation.RequiresApi;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.AppCompatButton;
 import androidx.appcompat.widget.AppCompatImageButton;
@@ -20,13 +21,16 @@ import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.Log;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.EditText;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.musically.R;
+import com.example.musically.enums.PlaylistAction;
 import com.example.musically.enums.RepeatTypes;
+import com.example.musically.room.playlist.Playlist;
 import com.example.musically.room.song.Song;
 import com.example.musically.room.MusicallyDatabase;
 import com.example.musically.general_utils.FilesManager;
@@ -71,9 +75,15 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewClick
     private ArrayList<Song> allSongs;
     private ArrayList<Song> visibleSongs;
     private ArrayList<Song> searchedSongs;
+    private ArrayList<Playlist> playlists;
     private MediaPlayer mediaPlayer;
     private Integer currentSongIndex;
-
+    private AlertDialog.Builder songOptionsDialog;
+    private AlertDialog.Builder selectPlaylistDialog;
+    private AlertDialog addPlaylistDialog;
+    private EditText editTextAddPlaylistName;
+    private TextView tvFinishAddingPlaylist;
+    private Playlist currentPlaylist;
     private RepeatTypes loopType;
     private SharedPreferences sharedPreferences;
     private MusicallyDatabase database;
@@ -105,6 +115,8 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewClick
         playingSongs = allSongs;
         visibleSongs = allSongs;
         searchedSongs = new ArrayList<>();
+        playlists = new ArrayList<>(database.playlistDao().getAll());
+        currentPlaylist = null;
     }
 
     private void findViews() {
@@ -130,6 +142,15 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewClick
         dividerItemDecoration = new DividerItemDecoration(recyclerViewSongs.getContext(), DividerItemDecoration.VERTICAL);
         recyclerViewSongsLayoutManager = new LinearLayoutManager(getApplicationContext());
         recyclerViewSongsAdapter = new SongsRecyclerViewAdapter(visibleSongs, this);
+        songOptionsDialog = new AlertDialog.Builder(this).setTitle("Options");
+        selectPlaylistDialog = new AlertDialog.Builder(this).setTitle("Playlists");
+        View addPlaylistDialogView = this.getLayoutInflater()
+                .inflate(R.layout.add_playlist_dialog_layout, null);
+        addPlaylistDialog = new AlertDialog.Builder(this)
+                .setView(addPlaylistDialogView)
+                .create();
+        editTextAddPlaylistName = addPlaylistDialogView.findViewById(R.id.editTextAddPlaylistName);
+        tvFinishAddingPlaylist = addPlaylistDialogView.findViewById(R.id.tvFinishAddingPlaylist);
     }
 
     @RequiresApi(api = Build.VERSION_CODES.N)
@@ -147,6 +168,21 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewClick
         configureSeePlaylistsButton();
         configureRefreshSongsListButton();
         configureSearchSongsEditText();
+        configureFinishAddingPlaylistButton();
+    }
+
+    private void configureFinishAddingPlaylistButton() {
+        tvFinishAddingPlaylist.setOnClickListener(view1 -> {
+            if (editTextAddPlaylistName.getText().length() >= 3) {
+                Playlist newPlaylist = new Playlist(editTextAddPlaylistName.getText().toString());
+                long newPlaylistId = database.playlistDao().insert(newPlaylist);
+                newPlaylist.setId(newPlaylistId);
+                playlists.add(newPlaylist);
+
+                addPlaylistDialog.dismiss();
+                editTextAddPlaylistName.getText().clear();
+            }
+        });
     }
 
     private void configureSearchSongsEditText() {
@@ -189,9 +225,17 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewClick
         });
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.N)
     private void configureSeePlaylistsButton() {
         buttonPlaylists.setOnClickListener(view -> {
-            // todo
+            displayPlaylistsDialog(null, PlaylistAction.SEE_SONGS);
+        });
+
+        buttonPlaylists.setOnLongClickListener(view -> {
+            addPlaylistDialog.show();
+            addPlaylistDialog.getWindow()
+                    .setLayout(WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.WRAP_CONTENT);
+            return true;
         });
     }
 
@@ -203,6 +247,7 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewClick
                     .collect(Collectors.toList());
 
             updateSongsRecyclerView(visibleSongs);
+            currentPlaylist = null;
         });
     }
 
@@ -210,6 +255,7 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewClick
         buttonAllSongs.setOnClickListener(view -> {
             visibleSongs = allSongs;
             updateSongsRecyclerView(visibleSongs);
+            currentPlaylist = null;
         });
     }
 
@@ -258,10 +304,14 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewClick
 
     private void configurePreviousSongButton() {
         buttonPreviousSong.setOnClickListener(view -> {
-            if (currentSongIndex == 0) {
-                currentSongIndex = playingSongs.size() - 1;
+            if (currentSongIndex == null) {
+                currentSongIndex = 0;
             } else {
-                --currentSongIndex;
+                if (currentSongIndex == 0) {
+                    currentSongIndex = playingSongs.size() - 1;
+                } else {
+                    --currentSongIndex;
+                }
             }
             prepareSongPlay(currentSongIndex);
             setSongDuration(currentSongIndex);
@@ -270,10 +320,14 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewClick
 
     private void configureNextSongButton() {
         buttonNextSong.setOnClickListener(view -> {
-            if (currentSongIndex == playingSongs.size() - 1) {
+            if (currentSongIndex == null) {
                 currentSongIndex = 0;
             } else {
-                ++currentSongIndex;
+                if (currentSongIndex == playingSongs.size() - 1) {
+                    currentSongIndex = 0;
+                } else {
+                    ++currentSongIndex;
+                }
             }
             prepareSongPlay(currentSongIndex);
             setSongDuration(currentSongIndex);
@@ -291,7 +345,9 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewClick
                     mediaPlayer.start();
                 }
             } else {
-                Toast.makeText(getApplicationContext(), "No song selected", Toast.LENGTH_SHORT).show();
+                currentSongIndex = 0;
+                prepareSongPlay(currentSongIndex);
+                setSongDuration(currentSongIndex);
             }
         });
     }
@@ -395,7 +451,7 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewClick
                 deleteSongFromFavorites(clickedView, position);
             }
         } else {
-            if(searchedSongs.size() > 0){
+            if (searchedSongs.size() > 0) {
                 playingSongs = searchedSongs;
             } else {
                 playingSongs = visibleSongs;
@@ -419,15 +475,79 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewClick
                 .setImageResource(R.drawable.heart_icon_filled_24);
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.N)
+    private void displaySongOptionsDialog(Song song) {
+        int optionsArrayId = currentPlaylist == null ? R.array.generalSongOptions : R.array.playlistSongOptions;
+        songOptionsDialog.setItems(optionsArrayId, (dialogInterface, i) -> {
+                    if (i == 0) { // add/delete from playlist
+                        if (currentPlaylist == null) {
+                            displayPlaylistsDialog(song, PlaylistAction.ADD);
+                        } else {
+                            removeSongFromPlaylist(song);
+                        }
+
+                    } else if (i == 1) { // delete
+                        allSongs.remove(song);
+                        database.songDao().deleteSong(song.getId());
+                        updateSongsRecyclerView(visibleSongs);
+                    }
+                })
+                .create().show();
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.N)
+    private void displayPlaylistsDialog(Song song, PlaylistAction desiredAction) {
+        if (playlists.size() == 0) {
+            Toast.makeText(getApplicationContext(),
+                    "No playlists yet! Long click playlists button to add one",
+                    Toast.LENGTH_LONG).show();
+        } else {
+            CharSequence[] playlistsNames = playlists.stream()
+                    .map(Playlist::getName)
+                    .collect(Collectors.toList())
+                    .toArray(new CharSequence[playlists.size()]);
+
+            final PlaylistAction action = desiredAction;
+            selectPlaylistDialog.setItems(playlistsNames, (dialogInterface, i) -> {
+                        if (action == PlaylistAction.ADD) {
+                            addSongToPlaylist(song, i);
+                        } else if (action == PlaylistAction.SEE_SONGS) {
+                            currentPlaylist = playlists.get(i);
+                            visibleSongs = playlists.get(i).getSongs();
+                            updateSongsRecyclerView(visibleSongs);
+                        }
+                    })
+                    .create().show();
+        }
+    }
+
+    private void removeSongFromPlaylist(Song song) {
+        currentPlaylist.removeSong(song);
+        database.playlistDao().insert(currentPlaylist);
+        updateSongsRecyclerView(visibleSongs);
+    }
+
+    private void addSongToPlaylist(Song song, int i) {
+        playlists.get(i).addSong(song);
+        database.playlistDao().insert(playlists.get(i));
+        Toast.makeText(getApplicationContext(),
+                song.getName().concat(" added to playlist!"),
+                Toast.LENGTH_SHORT).show();
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.N)
     @Override
     public void onLongPositionClicked(View clickedView, int clickedRecyclerItemPosition) {
-        //todo alertdialog
+        displaySongOptionsDialog(visibleSongs.get(clickedRecyclerItemPosition));
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            for (Playlist playlist : playlists) {
+                Log.e("PLAYLISTS:", playlist.getSongs().size() + " - " + playlist);
+            }
             Log.e("SONGS:", allSongs.size() + " - " + allSongs);
         }
     }
